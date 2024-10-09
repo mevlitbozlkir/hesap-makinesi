@@ -1,0 +1,52 @@
+        Console.Write("Klasör yolunu girin: ");
+        string dizinYolu = Console.ReadLine();
+
+        Console.Write("Tutulacak dosya sayısını girin: ");
+        int tutmaSayisi;
+        while (!int.TryParse(Console.ReadLine(), out tutmaSayisi) || tutmaSayisi < 1)
+        {
+            Console.Write("Lütfen geçerli bir sayı girin: ");
+        }
+
+        if (!Directory.Exists(dizinYolu))
+        {
+            Console.WriteLine("Geçersiz klasör yolu.");
+            return;
+        }
+
+        // tarih sıralama
+        ProcessDirectory(dizinYolu, tutmaSayisi);
+
+        Console.WriteLine("İşlem tamamlandı.");
+    }
+
+    static void ProcessDirectory(string dizinYolu, int tutmaSayisi)
+    {
+        //Bura Ana Klasör
+        var dosyalar = Directory.GetFiles(dizinYolu, "*.*", SearchOption.TopDirectoryOnly)
+                                .Select(d => new FileInfo(d))
+                                .OrderByDescending(f => f.LastWriteTime)
+                                .ToList();
+
+        var tutulacakDosyalar = dosyalar.Take(tutmaSayisi).Select(f => f.FullName).ToList();
+        var silinecekDosyalar = dosyalar.Skip(tutmaSayisi).Select(f => f.FullName).ToList();
+
+        foreach (var dosya in silinecekDosyalar)
+        {
+            try
+            {
+                File.Delete(dosya);
+                Console.WriteLine($"{dosya} silindi.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Dosya silinirken hata oluştu: {dosya} - {ex.Message}");
+            }
+        }
+        //Bura Alt Klasör
+        var altDizinler = Directory.GetDirectories(dizinYolu, "*", SearchOption.TopDirectoryOnly);
+        foreach (var altDizin in altDizinler)
+        {
+            ProcessDirectory(altDizin, tutmaSayisi);
+            Console.WriteLine($"{altDizin} dizinindeki işlemler tamamlandı.");
+        }
